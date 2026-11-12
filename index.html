@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory – Schräger Wurf</title>
+
+  <style>
+    :root {
+      --orange: #f39c12;
+      --orange-dunkel: #d68910;
+      --grau: #d9d9d9;
+      --blau: #2563eb;
+      --gruen: #22c55e;
+      --rot: #ef4444;
+      --hintergrund: #f4f6f8;
+      --karte: #ffffff;
+      --text: #1f2937;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: var(--hintergrund);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #17324d;
+      text-align: center;
+    }
+
+    .beschreibung {
+      max-width: 850px;
+      margin: 0 auto 20px;
+      padding: 15px 18px;
+      background: white;
+      border-left: 5px solid var(--orange);
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .infozeile {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .status {
+      padding: 8px 12px;
+      background: #e5e7eb;
+      border-radius: 6px;
+    }
+
+    button {
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      color: white;
+      background: var(--blau);
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: separate;
+      border-spacing: 8px;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      height: 150px;
+      text-align: center;
+      vertical-align: middle;
+      border-radius: 8px;
+    }
+
+    /* Erste Zeile: grau und vorgegeben */
+    thead th {
+      padding: 12px;
+      background: var(--grau);
+      color: #222;
+      font-size: 1rem;
+    }
+
+    /* Erste Spalte: orange und vorgegeben */
+    tbody th {
+      width: 18%;
+      padding: 12px;
+      background: var(--orange);
+      color: #17202a;
+      font-size: 1rem;
+    }
+
+    td {
+      padding: 0;
+      background: transparent;
+    }
+
+    .karte {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-height: 140px;
+      padding: 14px;
+      border: 3px solid #cbd5e1;
+      border-radius: 8px;
+      background: var(--karte);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s, border-color 0.2s, background 0.2s;
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    .karte:hover {
+      transform: translateY(-3px);
+      border-color: var(--blau);
+    }
+
+    .karte.ausgewaehlt {
+      background: #dbeafe;
+      border-color: var(--blau);
+      transform: scale(1.03);
+    }
+
+    .karte.richtig {
+      background: #dcfce7;
+      border-color: var(--gruen);
+      cursor: default;
+    }
+
+    .karte.falsch {
+      background: #fee2e2;
+      border-color: var(--rot);
+    }
+
+    .karte.gesperrt {
+      pointer-events: none;
+    }
+
+    .formel {
+      font-family: "Times New Roman", serif;
+      font-size: 1.15rem;
+      font-style: italic;
+    }
+
+    .hinweis {
+      margin-top: 18px;
+      text-align: center;
+      color: #4b5563;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      th,
+      td {
+        height: 125px;
+      }
+
+      .karte {
+        min-height: 115px;
+        padding: 8px;
+        font-size: 0.8rem;
+      }
+
+      tbody th {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <h1>Memory: Der schräge Wurf</h1>
+
+    <div class="beschreibung">
+      <strong>Aufgabe:</strong>
+      Decke jeweils zwei Karten auf. Finde die passende Zuordnung aus
+      <strong>Formel und Bedeutung</strong>. Die graue Kopfzeile und die orange
+      erste Spalte sind bereits vorgegeben.
+    </div>
+
+    <div class="infozeile">
+      <div class="status">Gefundene Paare: <span id="paare">0</span> / 12</div>
+      <div class="status">Versuche: <span id="versuche">0</span></div>
+      <button id="neustart">Neu starten</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table aria-label="Memory-Tabelle zum schrägen Wurf">
+        <thead>
+          <tr>
+            <th>Größe</th>
+            <th>Definition</th>
+            <th>Formel</th>
+            <th>Bedeutung</th>
+          </tr>
+        </thead>
+
+        <tbody id="memoryTabelle">
+          <!-- Die Karten werden durch JavaScript eingefügt. -->
+        </tbody>
+      </table>
+    </div>
+
+    <p class="hinweis" id="hinweis">
+      Klicke auf eine Karte, um sie aufzudecken.
+    </p>
+  </main>
+
+  <script>
+    "use strict";
+
+    /*
+      Jedes Paar besitzt eine gemeinsame ID.
+      Die beiden Karten mit derselben ID gehören zusammen.
+    */
+    const paare = [
+      {
+        id: "v0x",
+        zeile: "Horizontale Geschwindigkeit",
+        karten: [
+          "Horizontale Komponente der Anfangsgeschwindigkeit",
+          "<span class='formel'>v<sub>0x</sub> = v<sub>0</sub> · cos(α)</span>"
+        ]
+      },
+      {
+        id: "v0y",
+        zeile: "Vertikale Geschwindigkeit",
+        karten: [
+          "Vertikale Komponente der Anfangsgeschwindigkeit",
+          "<span class='formel'>v<sub>0y</sub> = v<sub>0</sub> · sin(α)</span>"
+        ]
+      },
+      {
+        id: "vx",
+        zeile: "Geschwindigkeit in x-Richtung",
+        karten: [
+          "Bleibt beim schrägen Wurf ohne Luftwiderstand konstant",
+          "<span class='formel'>v<sub>x</sub>(t) = v<sub>0x</sub></span>"
+        ]
+      },
+      {
+        id: "vy",
+        zeile: "Geschwindigkeit in y-Richtung",
+        karten: [
+          "Ändert sich durch die Erdbeschleunigung",
+          "<span class='formel'>v<sub>y</sub>(t) = v<sub>0y</sub> - g · t</span>"
+        ]
+      },
+      {
+        id: "sx",
+        zeile: "Horizontale Strecke",
+        karten: [
+          "Zurückgelegte Strecke in x-Richtung",
+          "<span class='formel'>x(t) = v<sub>0x</sub> · t</span>"
+        ]
+      },
+      {
+        id: "sy",
+        zeile: "Vertikale Strecke",
+        karten: [
+          "Höhe des Körpers über der Abwurfhöhe",
+          "<span class='formel'>y(t) = v<sub>0y</sub> · t - ½ · g · t²</span>"
+        ]
+      },
+      {
+        id: "g",
+        zeile: "Erdbeschleunigung",
+        karten: [
+          "Beschleunigung, die nach unten wirkt",
+          "<span class='formel'>g ≈ 9,81 m/s²</span>"
+        ]
+      },
+      {
+        id: "hoehe",
+        zeile: "Maximale Höhe",
+        karten: [
+          "Höchster Punkt der Flugbahn",
+          "<span class='formel'>h<sub>max</sub> = v<sub>0y</sub>² / (2 · g)</span>"
+        ]
+      },
+      {
+        id: "zeit",
+        zeile: "Flugzeit bei gleicher Höhe",
+        karten: [
+          "Zeit vom Abwurf bis zur Rückkehr auf die Abwurfhöhe",
+          "<span class='formel'>t<sub>ges</sub> = 2 · v<sub>0y</sub> / g</span>"
+        ]
+      },
+      {
+        id: "scheitel",
+        zeile: "Scheitelpunkt",
+        karten: [
+          "An diesem Punkt ist die vertikale Geschwindigkeit gleich null",
+          "<span class='formel'>v<sub>y</sub> = 0</span>"
+        ]
+      },
+      {
+        id: "bahn",
+        zeile: "Flugbahn",
+        karten: [
+          "Bahnkurve des Körpers beim schrägen Wurf",
+          "<span class='formel'>y(x) = tan(α) · x - g · x² / (2 · v<sub>0</sub>² · cos²(α))</span>"
+        ]
+      },
+      {
+        id: "auftreff",
+        zeile: "Auftreffgeschwindigkeit",
+        karten: [
+          "Bei gleicher Abwurfs- und Auftreffhöhe gleich groß wie v₀",
+          "<span class='formel'>v<sub>auf</sub> = v<sub>0</sub></span>"
+        ]
+      }
+    ];
+
+    const tabelle = document.getElementById("memoryTabelle");
+    const paareAnzeige = document.getElementById("paare");
+    const versucheAnzeige = document.getElementById("versuche");
+    const hinweis = document.getElementById("hinweis");
+    const neustart = document.getElementById("neustart");
+
+    let ersteKarte = null;
+    let zweiteKarte = null;
+    let gesperrt = false;
+    let gefundenePaare = 0;
+    let versuche = 0;
+
+    function kartenErzeugen() {
+      tabelle.innerHTML = "";
+
+      // Jede Karte wird mit einer Paar-ID angelegt.
+      let karten = [];
+
+      paare.forEach((paar) => {
+        paar.karten.forEach((inhalt) => {
+          karten.push({
+            id: paar.id,
+            inhalt: inhalt
+          });
+        });
+      });
+
+      // Karten zufällig mischen.
+      karten.sort(() => Math.random() - 0.5);
+
+      /*
+        12 Zeilen mit jeweils drei Karten:
+        Die erste Spalte bleibt orange vorgegeben.
+        Die drei Karten werden in den übrigen Spalten verteilt.
+      */
+      paare.forEach((paar, index) => {
+        const tr = document.createElement("tr");
+
+        const th = document.createElement("th");
+        th.textContent = paar.zeile;
+        tr.appendChild(th);
+
+        for (let spalte = 0; spalte < 3; spalte++) {
+          const td = document.createElement("td");
+          const karte = karten[index * 3 + spalte];
+
+          if (karte) {
+            const button = document.createElement("div");
+            button.className = "karte";
+            button.dataset.id = karte.id;
+            button.innerHTML = "Karte aufdecken";
+            button.dataset.inhalt = karte.inhalt;
+
+            button.addEventListener("click", () => karteAufdecken(button));
+            td.appendChild(button);
+          }
+
+          tr.appendChild(td);
+        }
+
+        tabelle.appendChild(tr);
+      });
+    }
+
+    function karteAufdecken(karte) {
+      if (
+        gesperrt ||
+        karte.classList.contains("richtig") ||
+        karte === ersteKarte
+      ) {
+        return;
+      }
+
+      karte.classList.add("ausgewaehlt");
+      karte.innerHTML = karte.dataset.inhalt;
+
+      if (!ersteKarte) {
+        ersteKarte = karte;
+        hinweis.textContent = "Wähle jetzt die passende zweite Karte.";
+        return;
+      }
+
+      zweiteKarte = karte;
+      versuche++;
+      versucheAnzeige.textContent = versuche;
+
+      pruefePaar();
+    }
+
+    function pruefePaar() {
+      gesperrt = true;
+
+      if (ersteKarte.dataset.id === zweiteKarte.dataset.id) {
+        ersteKarte.classList.remove("ausgewaehlt");
+        zweiteKarte.classList.remove("ausgewaehlt");
+
+        ersteKarte.classList.add("richtig", "gesperrt");
+        zweiteKarte.classList.add("richtig", "gesperrt");
+
+        gefundenePaare++;
+        paareAnzeige.textContent = gefundenePaare;
+
+        ersteKarte = null;
+        zweiteKarte = null;
+        gesperrt = false;
+
+        if (gefundenePaare === paare.length) {
+          hinweis.textContent =
+            `Glückwunsch! Du hast alle ${paare.length} Paare gefunden.`;
+        } else {
+          hinweis.textContent = "Richtig zugeordnet! Suche das nächste Paar.";
+        }
+      } else {
+        ersteKarte.classList.add("falsch");
+        zweiteKarte.classList.add("falsch");
+
+        hinweis.textContent = "Das ist noch kein passendes Paar.";
+
+        setTimeout(() => {
+          ersteKarte.classList.remove("ausgewaehlt", "falsch");
+          zweiteKarte.classList.remove("ausgewaehlt", "falsch");
+
+          ersteKarte.innerHTML = "Karte aufdecken";
+          zweiteKarte.innerHTML = "Karte aufdecken";
+
+          ersteKarte = null;
+          zweiteKarte = null;
+          gesperrt = false;
+
+          hinweis.textContent =
+            "Klicke auf eine Karte, um sie aufzudecken.";
+        }, 1100);
+      }
+    }
+
+    function spielNeustarten() {
+      ersteKarte = null;
+      zweiteKarte = null;
+      gesperrt = false;
+      gefundenePaare = 0;
+      versuche = 0;
+
+      paareAnzeige.textContent = "0";
+      versucheAnzeige.textContent = "0";
+      hinweis.textContent = "Klicke auf eine Karte, um sie aufzudecken.";
+
+      kartenErzeugen();
+    }
+
+    neustart.addEventListener("click", spielNeustarten);
+
+    // Spiel beim Laden der Seite starten.
+    kartenErzeugen();
+  </script>
+</body>
+</html>
